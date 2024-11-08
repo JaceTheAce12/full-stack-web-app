@@ -3,12 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="../src/output.css" rel="stylesheet">
+  <title>Golf Score Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css"/>
+  <link rel="stylesheet" href="./src/output.css"/>
 </head>
-<body>
-  <h1 class="text-3xl font-bold underline">
-    Hello world!
-  </h1>
-  <script src="../src/js/app.js"></script>
+<main>
+    <header class="bg-green-700 p-4">
+        <div class="search-container max-w-xl m-auto">
+            <input type="text" class="mt-1 block w-96 p-2 border border-gray-300 rounded-md search m-auto"> 
+        </div>
+    </header>
+
+    <h1 class='text-2xl font-bold'>Courses</h1>
+        <div class="course-container text-center flex flex-wrap justify-center gap-4 mb-6"></div>
+</main>
+  <script src="./src/js/app.js"></script>
 </body>
 </html>
