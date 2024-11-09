@@ -1,5 +1,8 @@
 let courses = [];
 let scores = [];
+let holeIndex = 0;
+let totalScore = 0;
+let selectedScores = {};
 const startRoundBtn = document.querySelector('.start-round');
 const modal = document.querySelector('.modal');
 const originalModalContent = modal.innerHTML;
@@ -168,8 +171,83 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      const prevHole = (courseData) => {
+        if (holeIndex > 0) {
+          holeIndex--;
+        } else {
+          holeIndex = courseData.holes.length - 1;
+        }
+        updateModalContent(courseData);
+      };
+    
+      const nextHole = (courseData) => {
+        if (selectedScores[holeIndex] === undefined) {
+          totalScore += selectedScores[holeIndex];
+        }
+    
+        if (holeIndex < courseData.holes.length - 1) {
+          holeIndex++;
+        } else {
+          holeIndex = 0;
+        }
+        updateModalContent(courseData);
+      };
+    
+      const attachNavigationEventListeners = (courseData) => {
+        const prevHoleBtn = document.querySelector('.prev-hole');
+        const nextHoleBtn = document.querySelector('.next-hole');
+    
+        if (prevHoleBtn) {
+          prevHoleBtn.addEventListener('click', () => prevHole(courseData));
+          prevHoleBtn.classList.add('hover:bg-gray-400');
+        }
+    
+        if (nextHoleBtn) {
+          nextHoleBtn.addEventListener('click', () => nextHole(courseData));
+          nextHoleBtn.classList.add('hover:bg-gray-400');
+        }
+      };
+
       const updateModalContent = (courseData) => {
-        console.log('Course Data:', courseData);
+        const hole = courseData.holes[holeIndex];
+        const innerContent = document.querySelector('.inner');
+        innerContent.innerHTML = ''; 
+        innerContent.innerHTML = `
+          <div class='flex items-center justify-between w-full p-4'>
+            <button class='${holeIndex === 0 ? 'hidden' : ''} prev-hole bg-gray-300 p-2 rounded-full hover:bg-gray-400'>&larr;</button>
+            <div class='flex flex-col items-center w-full'>
+              <div class='flex flex-col items-center mb-4'>
+                <h1 class='text-3xl font-bold mb-2'>Hole ${hole.number}</h1>
+                <p class='text-lg'>Par ${hole.par}</p>
+                <p class='text-lg'>Distance ${hole.length} yards</p>
+              </div>
+              <img src='${hole.image}' alt='${courseData.name}' class='w-full h-48 object-cover rounded-lg mb-4'>
+              <div class='flex flex-row mt-3'>
+                ${renderPars(holeIndex)}
+              </div>
+              <button class='finish-round ${holeIndex === 17 ? '' : 'hidden'} bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-96 m-auto text-center hover:bg-green-600 mt-4'>Finish Round</button>
+            </div>
+            <button class='${holeIndex === 17 ? 'hidden' : ''} next-hole bg-gray-300 p-2 rounded-full hover:bg-gray-400'>&rarr;</button>
+          </div>
+        `;
+        attachNavigationEventListeners(courseData); 
+      
+        console.log(selectedScores);
+      };
+
+      const renderPars = (holeIndex) => {
+        let html = ''
+        for (let i = 1; i <= 8; i++) {
+           html += `
+              <input 
+                class='btn mx-1 border border-black rounded-md py-2 px-3 hover:bg-gray-200 cursor-pointer' 
+                value=${i} 
+                type='button' 
+                data-hole-index='${holeIndex}' 
+                data-score='${i}'
+                />`
+        }
+        return html;
       }
 
     searchCourses();
