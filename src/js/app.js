@@ -231,6 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         `;
         attachNavigationEventListeners(courseData); 
+        attachScoreEventListeners();
+        getTotalScore();
       
         console.log(selectedScores);
       };
@@ -248,6 +250,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 />`
         }
         return html;
+      }
+
+      const attachScoreEventListeners = () => {
+        const scoreButtons = document.querySelectorAll('.btn');
+        scoreButtons.forEach(button => {
+          button.addEventListener('click', (event) => {
+            const holeIndex = event.target.getAttribute('data-hole-index');
+            const score = event.target.getAttribute('data-score');
+            selectScore(holeIndex, score, event.target);
+          });
+        });
+      };
+
+      const selectScore = (holeIndex, score, element) => {
+        selectedScores[holeIndex] = score;
+        document.querySelectorAll('.btn').forEach(btn => {
+          btn.classList.remove('bg-gray-200');
+        });
+        element.classList.add('bg-gray-200');
+      }
+
+      const getTotalScore = () => {
+        let total = 0;
+        for (let key in selectedScores) {
+          total += parseInt(selectedScores[key]);
+        }
+        return total;
       }
 
     searchCourses();
