@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         courses = data;
         console.log('Courses', courses);
         renderCourses();
+        displayRounds();
     };
       
     getCourses();
@@ -233,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         attachNavigationEventListeners(courseData); 
         attachScoreEventListeners();
         getTotalScore();
+        finishRoundEventListener(courseData);
       
         console.log(selectedScores);
       };
@@ -266,9 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const selectScore = (holeIndex, score, element) => {
         selectedScores[holeIndex] = score;
         document.querySelectorAll('.btn').forEach(btn => {
-          btn.classList.remove('bg-gray-200');
+          btn.classList.remove('bg-blue-200');
         });
-        element.classList.add('bg-gray-200');
+        element.classList.add('bg-blue-200');
       }
 
       const getTotalScore = () => {
@@ -278,6 +280,71 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return total;
       }
+
+      const finishRound = (courseData) => {
+        const playerName = courseData.playerName;
+        const currentDate = courseData.currentDate;
+        const roundScores = {
+          round: scores.length + 1,
+          playerName,
+          date: currentDate,
+          scores: { ...selectedScores },
+          totalScore: getTotalScore()
+        };
+        scores.push(roundScores);
+    
+        const innerContent = document.querySelector('.inner');
+        innerContent.innerHTML = ''; 
+        innerContent.innerHTML = `
+          <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md'>
+            <h1 class='text-3xl font-bold mb-4'>Round Summary</h1>
+            <p class='text-xl mb-2'>Your total score is <span class='font-bold'>${getTotalScore()}</span></p>
+            <div class='w-full mb-4'>
+              <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+              <ul class='list-disc list-inside'>
+                ${Object.keys(selectedScores).map(holeIndex => `
+                  <li class='text-lg'>Hole ${parseInt(holeIndex) + 1}: ${selectedScores[holeIndex]}</li>
+                `).join('')}
+              </ul>
+            </div>
+            <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4' onclick='${closeModal}'>Close</button>
+          </div>
+        `;
+      };
+
+      const finishRoundEventListener = (courseData) => {
+        const finishRoundBtn = document.querySelector('.finish-round');
+        finishRoundBtn.addEventListener('click', () => finishRound(courseData));
+      }
+
+      const displayRounds = () => {
+        const roundsContainer = document.querySelector('.rounds');
+        roundsContainer.innerHTML = ''; 
+      
+        scores.forEach((round, index) => {
+          roundsContainer.innerHTML += `
+            <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full'>
+              <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
+              <div class='w-full'>
+                <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
+                <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
+                <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
+              </div>
+              <div class='w-full mb-4'>
+                <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+                <div class='grid grid-cols-2 gap-4'>
+                  ${Object.entries(round.scores).map(([holeIndex, score]) => `
+                    <div class='flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
+                      <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                      <span class='text-lg'>${score}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      };
 
     searchCourses();
 });
