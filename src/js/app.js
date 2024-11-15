@@ -237,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         getTotalScore();
         finishRoundEventListener(courseData);
       
-        console.log(selectedScores);
       };
 
       const renderPars = (holeIndex) => {
@@ -322,43 +321,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const displayRounds = () => {
         const roundsContainer = document.querySelector('.rounds');
-        roundsContainer.innerHTML = ''; 
-    
-        scores.forEach((round, index) => {
-            roundsContainer.innerHTML += `
-                <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full'>
-                    <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
-                    <div class='w-full'>
-                        <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
-                        <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
-                        <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
+        roundsContainer.innerHTML = scores.map((round, index) => `
+            <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full'>
+                <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
+                <div class='w-full'>
+                    <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
+                    <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
+                    <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
+                </div>
+                <div class='w-full mb-4'>
+                    <div>
+                        <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
                     </div>
-                    <div class='w-full mb-4'>
-                        <div>
-                            <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
-                        </div>
-                        <div id='round-details-${index}' class='hidden'>
-                            <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                            <div class='grid grid-cols-2 gap-4'>
-                                ${Object.entries(round.scores).map(([holeIndex, score]) => `
-                                    <div class='flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
-                                        <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
-                                        <span class='text-lg'>${score}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
+                    <div id='round-details-${index}' class='round-details hidden'>
+                        <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+                        <div class='grid grid-cols-2 gap-4'>
+                            ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
+                                <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
+                                    <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                                    <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 </div>
-            `;
-        });
-
-        document.querySelectorAll('.view-scores-btn').forEach(button => {
-          button.addEventListener('click', (event) => {
-              const index = event.target.getAttribute('data-index');
-              toggleRounds(index);
-          });
-      });
+            </div>
+        `).join('');
+    
+        addEventListenersToViewScoresButtons();
+        addEventListenersToScoreSpans();
     };
 
     const toggleRounds = (index) => {
@@ -369,37 +360,100 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('clicked')
     };
 
-      const displayNewRound = () => {
-        const roundsContainer = document.querySelector('.rounds');
-        const round = scores[scores.length - 1];
-        const index = scores.length - 1;
-        roundsContainer.innerHTML += `
-          <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full'>
+    const addEventListenersToViewScoresButtons = () => {
+      document.querySelectorAll('.view-scores-btn').forEach(button => {
+          button.addEventListener('click', ({ target }) => {
+              const index = target.getAttribute('data-index');
+              toggleRounds(index);
+          });
+      });
+  };
+  
+  const addEventListenersToScoreSpans = () => {
+    document.querySelectorAll('.score-div span.score').forEach(span => {
+        span.addEventListener('click', ({ target }) => {
+            const scoreSpan = target;
+            const score = scoreSpan.textContent;
+            const roundIndex = scoreSpan.dataset.roundIndex;
+            const holeIndex = scoreSpan.dataset.holeIndex;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = score;
+            input.classList.add('score-input');
+            input.dataset.roundIndex = roundIndex;
+            input.dataset.holeIndex = holeIndex;
+            scoreSpan.replaceWith(input);
+
+            let save = false;
+
+            const saveScore = () => {
+                if (save) return;
+                save = true;
+
+                const newScore = input.value;
+                const newScoreSpan = document.createElement('span');
+                newScoreSpan.textContent = newScore;
+                newScoreSpan.classList.add('score', 'text-lg');
+                newScoreSpan.dataset.roundIndex = roundIndex;
+                newScoreSpan.dataset.holeIndex = holeIndex;
+
+                if (scores[roundIndex] && scores[roundIndex].roundScores) {
+                    scores[roundIndex].roundScores[holeIndex] = newScore;
+                } else {
+                    console.error('Round or hole not found');
+                }
+
+                input.replaceWith(newScoreSpan);
+                addEventListenersToScoreSpans();
+            };
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    saveScore();
+                }
+            });
+
+            input.addEventListener('blur', saveScore);
+        });
+    });
+};
+
+
+  const displayNewRound = () => {
+    const roundsContainer = document.querySelector('.rounds');
+    const round = scores[scores.length - 1];
+    const index = scores.length - 1;
+    roundsContainer.innerHTML += `
+        <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full'>
             <h1 class='text-3xl font-bold mb-4'>Round ${scores.length}</h1>
             <div class='w-full'>
-              <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
-              <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
-              <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
+                <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
+                <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
+                <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
             </div>
             <div class='w-full mb-4'>
-              <div>
-                <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
-              </div>
-              <div id='round-details-${index}' class='hidden'>
-                <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                <div class='grid grid-cols-2 gap-4'>
-                  ${Object.entries(round.scores).map(([holeIndex, score]) => `
-                    <div class='flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
-                      <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
-                      <span class='text-lg'>${score}</span>
-                    </div>
-                  `).join('')}
+                <div>
+                    <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
                 </div>
-              </div>
+                <div id='round-details-${index}' class='round-details hidden'>
+                    <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+                    <div class='grid grid-cols-2 gap-4'>
+                        ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
+                            <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
+                                <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                                <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
             </div>
-          </div>
-        `;
-      }
+        </div>
+    `;
+
+    addEventListenersToViewScoresButtons();
+    addEventListenersToScoreSpans();
+};
 
     searchCourses();
 });
