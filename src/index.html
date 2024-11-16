@@ -14,24 +14,28 @@
     </div>
   </header>
   <main>
-    <div class="modal hidden fixed z-1 left-0 top-0 w-full h-full flex items-center justify-center overflow-auto m-4">
-      <div class="modal-content bg-[#fefefe] p-5 rounded-md shadow-md w-[600px] max-w-full overflow-y-auto">
-          <span class="close-btn text-[#aaaaaa] hover:text-[#000] hover:no-underline hover:cursor-pointer float-right text-2xl font-bold">&times;</span>
-          <div class="inner w-full flex flex-col gap-2 justify-center m-auto">
-              <h1 class="course-title font-bold text-xl"></h1>
-              <p class="course-location"></p>
-              <img class="course-image w-[400px] rounded-md m-auto" src="" alt="Course Image">
-              <button class="start-round bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-96 m-auto text-center hover:bg-green-600">Start Round</button>
+    <div class="modal hidden fixed z-50 inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="modal-content bg-white p-6 rounded-lg shadow-lg w-full max-w-lg mx-4">
+          <span class="close-btn text-gray-500 hover:text-black hover:cursor-pointer float-right text-2xl font-bold">&times;</span>
+          <div class="inner w-full flex flex-col gap-4 justify-center m-auto">
+              <h1 class="course-title font-bold text-2xl text-center"></h1>
+              <p class="course-location text-center text-gray-600 font-semibold"></p>
+              <img class="course-image w-full rounded-md m-auto" src="" alt="Course Image">
+              <button class="start-round bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-full text-center hover:bg-green-600">Start Round</button>
           </div>
       </div>
     </div>
     
       <h1 class='text-4xl font-bold ml-12 my-12'>Courses</h1>
-      <div class="course-container text-center flex flex-wrap justify-center gap-4 mb-6"></div>
+      <div class="course-container text-center flex flex-wrap justify-center gap-4 mb-6 max-w-7xl m-auto"></div>
 
-      <div class="rounds-container">
-        <h1 class='text-2xl font-bold'>Rounds</h1>
-        <div class="rounds flex flex-col max-w-6xl m-auto"></div>
+      <div class="rounds-container max-w-7xl mx-auto p-6 ">
+        <h1 class='text-3xl font-bold mb-6'>Rounds</h1>
+        <div class="rounds flex flex-col w-full gap-4"></div>
+      </div>
+
+      <div class="handicap">
+        
       </div>
   </main>
   <script src="./js/app.js"></script>
