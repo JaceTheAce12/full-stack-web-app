@@ -4,6 +4,7 @@ let holeIndex = 0;
 let totalScore = 0;
 let selectedScores = {};
 let show = false;
+let roundIdCounter = 1;
 const startRoundBtn = document.querySelector('.start-round');
 const modal = document.querySelector('.modal');
 const originalModalContent = modal.innerHTML;
@@ -188,25 +189,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const prevHole = (courseData) => {
         if (holeIndex > 0) {
-          holeIndex--;
+            holeIndex--;
         } else {
-          holeIndex = courseData.holes.length - 1;
+            holeIndex = courseData.holes.length - 1;
         }
         updateModalContent(courseData);
-      };
+    };
     
-      const nextHole = (courseData) => {
+    const nextHole = (courseData) => {
         if (selectedScores[holeIndex] === undefined) {
-          totalScore += selectedScores[holeIndex];
+            totalScore += selectedScores[holeIndex];
         }
     
         if (holeIndex < courseData.holes.length - 1) {
-          holeIndex++;
+            holeIndex++;
         } else {
-          holeIndex = 0;
+            holeIndex = 0;
         }
         updateModalContent(courseData);
-      };
+    };
     
       const attachNavigationEventListeners = (courseData) => {
         const prevHoleBtn = document.querySelector('.prev-hole');
@@ -274,21 +275,33 @@ document.addEventListener('DOMContentLoaded', () => {
       const attachScoreEventListeners = () => {
         const scoreButtons = document.querySelectorAll('.btn');
         scoreButtons.forEach(button => {
-          button.addEventListener('click', (event) => {
-            const holeIndex = event.target.getAttribute('data-hole-index');
-            const score = event.target.getAttribute('data-score');
-            selectScore(holeIndex, score, event.target);
-          });
+            button.addEventListener('click', (event) => {
+                const holeIndex = event.target.getAttribute('data-hole-index');
+                const score = event.target.getAttribute('data-score');
+                selectScore(holeIndex, score, event.target);
+            });
         });
-      };
-
-      const selectScore = (holeIndex, score, element) => {
+    
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if (key >= '1' && key <= '8') {
+                const score = key;
+                const activeButton = document.querySelector('.btn[data-score="' + score + '"]');
+                if (activeButton) {
+                    const holeIndex = activeButton.getAttribute('data-hole-index');
+                    selectScore(holeIndex, score, activeButton);
+                }
+            }
+        });
+    };
+    
+    const selectScore = (holeIndex, score, element) => {
         selectedScores[holeIndex] = score;
         document.querySelectorAll('.btn').forEach(btn => {
-          btn.classList.remove('bg-blue-200');
+            btn.classList.remove('bg-blue-200');
         });
         element.classList.add('bg-blue-200');
-      }
+    };
 
       const getTotalScore = () => {
         let total = 0;
@@ -305,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalScore = getTotalScore();
     
         const newRound = {
+            id: roundIdCounter++,
             round: scores.length + 1,
             playerName,
             date: currentDate,
@@ -324,7 +338,8 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             console.log('New round added:', data);
             scores.push(data);
-            displayNewRound();
+            displayNewRound(); 
+            displayHandicap();
         })
         .catch(error => {
             console.error('Error adding new round:', error);
@@ -335,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         innerContent.innerHTML = `
             <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md'>
                 <h1 class='text-3xl font-bold mb-4'>Round Summary</h1>
-                <p class='text-xl mb-2'>Your total score is <span class='font-bold'>${totalScore}</span></p>
+                <p class='text-xl mb-2'>Your total score is <span class='font-bold'>${totalScore}</span><span>${totalScoreEmoji(totalScore)}</span></p>
                 <div class='w-full mb-4'>
                     <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
                     <ul class='list-disc list-inside'>
@@ -349,6 +364,16 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     };
 
+    const totalScoreEmoji = (totalScore) => {
+      if (totalScore < 72) {
+        return '🔥';
+      } else if (totalScore === 72) {
+        return '👌';
+      } else {
+        return '💩';
+      }
+    }
+
       const finishRoundEventListener = (courseData) => {
         const finishRoundBtn = document.querySelector('.finish-round');
         finishRoundBtn.addEventListener('click', () => finishRound(courseData));
@@ -358,36 +383,54 @@ document.addEventListener('DOMContentLoaded', () => {
         const roundsContainer = document.querySelector('.rounds');
         roundsContainer.innerHTML = scores.map((round, index) => `
             <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full max-w-3xl m-auto'>
-              <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
-              <div>
-                <span><i <i class="fa fa-trash"></i></span>
-              </div>
-              <div class='w-full'>
-                  <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
-                  <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
-                  <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
-              </div>
-              <div class='w-full mb-4'>
-                  <div>
-                      <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
-                  </div>
-                  <div id='round-details-${index}' class='round-details hidden mt-4'>
-                      <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                      <div class='grid grid-cols-2 gap-4'>
-                          ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
-                              <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
-                                  <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
-                                  <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
-                              </div>
-                          `).join('')}
-                      </div>
-                  </div>
-              </div>
+                <div class='flex justify-between w-full'>
+                    <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
+                    <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round' data-index='${index}'>
+                        <i class="fa fa-trash"></i>
+                    </span>
+                </div>
+                <div class='w-full'>
+                    <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
+                    <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
+                    <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
+                </div>
+                <div class='w-full mb-4'>
+                    <div>
+                        <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
+                    </div>
+                    <div id='round-details-${index}' class='round-details hidden mt-4'>
+                        <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+                        <div class='grid grid-cols-2 gap-4'>
+                            ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
+                                <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
+                                    <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                                    <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
             </div>
-          `).join('');
+        `).join('');
     
         addEventListenersToViewScoresButtons();
         addEventListenersToScoreSpans();
+        deleteRoundEventListener();
+    };
+    
+    const deleteRound = (index) => {
+        scores.splice(index, 1);
+        displayRounds();
+        displayHandicap();
+    };
+    
+    const deleteRoundEventListener = () => {
+        document.querySelectorAll('.delete-round').forEach(button => {
+            button.addEventListener('click', ({ target }) => {
+                const index = parseInt(target.getAttribute('data-index'), 10); 
+                deleteModalConfirmation(index); 
+            });
+        });
     };
 
     const toggleRounds = (index) => {
@@ -468,9 +511,11 @@ const displayNewRound = () => {
 
   roundsContainer.innerHTML += `
       <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full max-w-3xl m-auto'>
-            <h1 class='text-3xl font-bold mb-4'>Round ${scores.length}</h1>
-            <div>
-                <span><i <i class="fa fa-trash"></i></span>
+            <div class='flex justify-between w-full'>
+                <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
+                <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round' data-index='${index}'>
+                    <i class="fa fa-trash"></i>
+                </span>
             </div>
             <div class='w-full'>
                 <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
@@ -534,6 +579,35 @@ const displayHandicap = () => {
         </div>
     `;
 }
+
+const deleteModalConfirmation = (index) => {
+    const modal = document.createElement('div');
+    modal.classList.add('fixed', 'z-50', 'inset-0', 'flex', 'items-center', 'justify-center', 'bg-black', 'bg-opacity-50');
+    modal.innerHTML = `
+        <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md'>
+            <h1 class='text-3xl font-bold mb-4'>Delete Confirmation</h1>
+            <p class='text-xl mb-4'>Are you sure you want to delete this round?</p>
+            <div class='flex space-x-4'>
+                <button class='confirm-delete bg-red-700 text-white font-bold py-3 px-6 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500'>Yes</button>
+                <button class='cancel-delete bg-green-700 text-white font-bold py-3 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500'>No</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const confirmButton = modal.querySelector('.confirm-delete');
+    const cancelButton = modal.querySelector('.cancel-delete');
+
+    confirmButton.addEventListener('click', () => {
+        deleteRound(index);
+        document.body.removeChild(modal);
+    });
+
+    cancelButton.addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+};
     searchCourses();
 });
 
