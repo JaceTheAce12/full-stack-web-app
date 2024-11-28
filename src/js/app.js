@@ -24,14 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
         courses = data;
         console.log('Courses', courses);
         renderCourses();
-        displayRounds();
     };
       
     const fetchData = async () => {
       await Promise.all([getScores(), getCourses()]);
       renderCourses();
-      displayRounds();
       displayHandicap();
+      renderUserCard();
   };
 
     fetchData();
@@ -381,47 +380,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const displayRounds = () => {
         const roundsContainer = document.querySelector('.rounds');
-        roundsContainer.innerHTML = scores.map((round, index) => `
-            <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full max-w-3xl m-auto'>
-                <div class='flex justify-between w-full'>
-                    <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
-                    <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round' data-index='${index}'>
-                        <i class="fa fa-trash"></i>
-                    </span>
-                </div>
-                <div class='w-full'>
-                    <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
-                    <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
-                    <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
-                </div>
-                <div class='w-full mb-4'>
-                    <div>
-                        <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
-                    </div>
-                    <div id='round-details-${index}' class='round-details hidden mt-4'>
-                        <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                        <div class='grid grid-cols-2 gap-4'>
-                            ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
-                                <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
-                                    <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
-                                    <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
-                                </div>
-                            `).join('')}
+        const tabs = scores.map((round, index) => `
+            <button class='tab-button px-4 py-2 rounded-t-lg ${index === 0 ? 'bg-green-700 text-white' : 'bg-gray-200'}' data-index='${index}'>Round ${index + 1}</button>
+        `).join('');
+    
+        const roundDetails = scores.map((round, index) => `
+            <div id='round-details-${index}' class='round-details ${index === 0 ? '' : 'hidden'} p-4 bg-white rounded-lg shadow-md relative'>
+                <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round absolute top-2 right-2' data-index='${index}'>
+                    <i class="fa fa-trash"></i>
+                </span>
+                <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
+                <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
+                <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
+                <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+                <div class='grid grid-cols-2 gap-4'>
+                    ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
+                        <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md'>
+                            <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                            <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
                         </div>
-                    </div>
+                    `).join('')}
                 </div>
             </div>
         `).join('');
     
-        addEventListenersToViewScoresButtons();
+        roundsContainer.innerHTML = `
+            <div class='tabs-container relative overflow-hidden mb-4'>
+                <div class='tabs flex space-x-2 overflow-x-auto scrollbar-hide'>
+                    ${tabs}
+                </div>
+                <div class='fade-left absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-200 to-transparent pointer-events-none'></div>
+                <div class='fade-right absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-200 to-transparent pointer-events-none'></div>
+            </div>
+            <div class='tab-content'>
+                ${roundDetails}
+            </div>
+        `;
+    
+        addEventListenersToTabButtons();
         addEventListenersToScoreSpans();
         deleteRoundEventListener();
+    };
+    
+    const addEventListenersToTabButtons = () => {
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', ({ target }) => {
+                const index = parseInt(target.getAttribute('data-index'), 10);
+                showRound(index);
+            });
+        });
+    };
+    
+    const showRound = (index) => {
+        document.querySelectorAll('.round-details').forEach((details, i) => {
+            details.classList.toggle('hidden', i !== index);
+        });
+        document.querySelectorAll('.tab-button').forEach((button, i) => {
+            button.classList.toggle('bg-green-700', i === index);
+            button.classList.toggle('text-white', i === index);
+            button.classList.toggle('bg-gray-200', i !== index);
+        });
     };
     
     const deleteRound = (index) => {
         scores.splice(index, 1);
         displayRounds();
-        displayHandicap();
+        renderUserCard(); 
     };
     
     const deleteRoundEventListener = () => {
@@ -543,6 +567,7 @@ const displayNewRound = () => {
 
   addEventListenersToViewScoresButtons();
   addEventListenersToScoreSpans();
+  deleteRoundEventListener();
 };
 
 const calculateHandicap = () => {
@@ -586,7 +611,7 @@ const deleteModalConfirmation = (index) => {
     modal.innerHTML = `
         <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md'>
             <h1 class='text-3xl font-bold mb-4'>Delete Confirmation</h1>
-            <p class='text-xl mb-4'>Are you sure you want to delete this round?</p>
+            <p class='text-xl mb-4'>Are you sure you want to delete round ${index + 1}?</p>
             <div class='flex space-x-4'>
                 <button class='confirm-delete bg-red-700 text-white font-bold py-3 px-6 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500'>Yes</button>
                 <button class='cancel-delete bg-green-700 text-white font-bold py-3 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500'>No</button>
@@ -608,6 +633,30 @@ const deleteModalConfirmation = (index) => {
         document.body.removeChild(modal);
     });
 };
+
+const renderUserCard = () => {
+    const userCardContainer = document.querySelector('.user-card');
+    userCardContainer.innerHTML = `
+        <img src="../assets/golfCourse.jpg" alt="User" class="user-image rounded-full w-32 h-32 mb-4">
+        <h2 class="text-2xl font-bold mb-2">Jace Randolph</h2>
+        <div class="stats w-full mt-4">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-lg font-semibold">Rounds:</span>
+                <span class="text-lg font-bold">${scores.length}</span>
+            </div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-lg font-semibold">Handicap:</span>
+                <span class="text-lg font-bold">${calculateHandicap()}</span>
+            </div>
+        </div>
+        <div class="rounds-container mx-auto p-6 w-full">
+            <h1 class='text-3xl font-bold mb-6'>Rounds</h1>
+            <div class="rounds flex flex-col w-full gap-4"></div>
+        </div>
+    `;
+    displayRounds();
+};
+
     searchCourses();
 });
 
