@@ -146,10 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class='w-full'>
                     <label class='block text-lg font-medium text-gray-700 mb-2' for='player-name'>Name</label>
                     <input type='text' id='player-name' placeholder='Name' class='player-name w-full border border-gray-300 rounded-md p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-green-500'>
+                    <p id="nameError" class="text-red-500 text-sm hidden">Please enter your name.</p>
                 </div>
                 <div class='w-full'>
                     <label class='block text-lg font-medium text-gray-700 mb-2' for='current-date'>Date</label>
                     <input type='date' id='current-date' class='current-date w-full border border-gray-300 rounded-md p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-green-500'>
+                    <p id="dateError" class="text-red-500 text-sm hidden">Please enter a date.</p>
                 </div>
                 <button class='submit-scores bg-green-700 text-white font-bold py-3 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500'>Submit</button>
             </div>
@@ -170,6 +172,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const submitForm = (courseData) => {
         const playerName = getPlayerName();
         const currentDate = getDate();
+        const nameError = document.getElementById('nameError');
+        const dateError = document.getElementById('dateError');
+
+        let valid = true;
+
+        if (playerName.trim() === '') {
+            nameError.classList.remove('hidden');
+            valid = false;
+        } else {
+            nameError.classList.add('hidden');
+        }
+
+        if (currentDate.trim() === '') {
+            dateError.classList.remove('hidden');
+            valid = false;
+        } else {
+            dateError.classList.add('hidden');
+        }
+
+        if (!valid) {
+            return;
+        }
+        
         courseData.playerName = playerName; 
         courseData.currentDate = currentDate;
         holeIndex = 0; 
@@ -385,17 +410,17 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     
         const roundDetails = scores.map((round, index) => `
-            <div id='round-details-${index}' class='round-details ${index === 0 ? '' : 'hidden'} p-4 bg-white rounded-lg shadow-md relative'>
-                <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round absolute top-2 right-2' data-index='${index}'>
+            <div id='round-details-${index}' class='round-details ${index === 0 ? '' : 'hidden'} p-4 bg-white rounded-lg shadow-md relative max-w-xl'>
+                <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round absolute top-4 right-4' data-index='${index}'>
                     <i class="fa fa-trash"></i>
                 </span>
                 <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
                 <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
                 <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
                 <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                <div class='grid grid-cols-2 gap-4'>
+                <div class='grid grid-cols-3 gap-4'>
                     ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
-                        <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md'>
+                        <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
                             <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
                             <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
                         </div>
@@ -405,12 +430,12 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     
         roundsContainer.innerHTML = `
-            <div class='tabs-container relative overflow-hidden mb-4'>
+            <div class='tabs-container relative overflow-hidden max-w-xl'>
                 <div class='tabs flex space-x-2 overflow-x-auto scrollbar-hide'>
                     ${tabs}
                 </div>
-                <div class='fade-left absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-200 to-transparent pointer-events-none'></div>
-                <div class='fade-right absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-200 to-transparent pointer-events-none'></div>
+                <div class='fade-left absolute left-0 top-0 bottom-0 w-8  pointer-events-none'></div>
+                <div class='fade-right absolute right-0 top-0 bottom-0 w-8 pointer-events-none'></div>
             </div>
             <div class='tab-content'>
                 ${roundDetails}
@@ -420,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addEventListenersToTabButtons();
         addEventListenersToScoreSpans();
         deleteRoundEventListener();
+        addEventListenersToViewScoresButton(); 
     };
     
     const addEventListenersToTabButtons = () => {
@@ -449,125 +475,122 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const deleteRoundEventListener = () => {
-        document.querySelectorAll('.delete-round').forEach(button => {
-            button.addEventListener('click', ({ target }) => {
-                const index = parseInt(target.getAttribute('data-index'), 10); 
-                deleteModalConfirmation(index); 
+        document.querySelectorAll('.delete-round').forEach((button, index) => {
+            button.addEventListener('click', () => {
+                deleteModalConfirmation(index);
             });
         });
     };
 
     const toggleRounds = (index) => {
-      const roundDetails = document.querySelector(`#round-details-${index}`);
-      if (roundDetails) {
-          roundDetails.classList.toggle('hidden');
-      }
-      console.log('clicked')
+        const roundDetails = document.querySelector(`#round-details-${index}`);
+        if (roundDetails) {
+            roundDetails.classList.toggle('hidden');
+        }
     };
 
-    const addEventListenersToViewScoresButtons = () => {
-      document.querySelectorAll('.view-scores-btn').forEach(button => {
-          button.addEventListener('click', ({ target }) => {
-              const index = target.getAttribute('data-index');
-              toggleRounds(index);
-          });
-      });
-  };
-  
-  const addEventListenersToScoreSpans = () => {
-    document.querySelectorAll('.score-div span.score').forEach(span => {
-        span.addEventListener('click', ({ target }) => {
-            const scoreSpan = target;
-            const score = scoreSpan.textContent;
-            const roundIndex = scoreSpan.dataset.roundIndex;
-            const holeIndex = scoreSpan.dataset.holeIndex;
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = score;
-            input.classList.add('score-input');
-            input.dataset.roundIndex = roundIndex;
-            input.dataset.holeIndex = holeIndex;
-            scoreSpan.replaceWith(input);
-
-            let save = false;
-
-            const saveScore = () => {
-                if (save) return;
-                save = true;
-
-                const newScore = input.value;
-                const newScoreSpan = document.createElement('span');
-                newScoreSpan.textContent = newScore;
-                newScoreSpan.classList.add('score', 'text-lg');
-                newScoreSpan.dataset.roundIndex = roundIndex;
-                newScoreSpan.dataset.holeIndex = holeIndex;
-
-                if (scores[roundIndex] && scores[roundIndex].roundScores) {
-                    scores[roundIndex].roundScores[holeIndex] = newScore;
-                } else {
-                    console.error('Round or hole not found');
-                }
-
-                input.replaceWith(newScoreSpan);
-                addEventListenersToScoreSpans();
-            };
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    saveScore();
-                }
+    const addEventListenersToViewScoresButton = () => {
+        document.querySelectorAll('.view-scores-btn').forEach(button => {
+            button.addEventListener('click', ({ target }) => {
+                const index = target.getAttribute('data-index');
+                toggleRounds(index);
             });
-
-            input.addEventListener('blur', saveScore);
         });
-    });
-};
+    };
+  
+    const addEventListenersToScoreSpans = () => {
+        document.querySelectorAll('.score-div').forEach(div => {
+            div.addEventListener('click', () => {
+                const scoreSpan = div.querySelector('span.score');
+                const score = scoreSpan.textContent;
+                const roundIndex = scoreSpan.dataset.roundIndex;
+                const holeIndex = scoreSpan.dataset.holeIndex;
+    
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = score;
+                input.classList.add('score-input', 'w-8', 'text-center');
+                input.dataset.roundIndex = roundIndex;
+                input.dataset.holeIndex = holeIndex;
+                scoreSpan.replaceWith(input);
+    
+                input.focus();
+    
+                let save = false;
+    
+                const saveScore = () => {
+                    if (save) return;
+                    save = true;
+    
+                    const newScore = input.value;
+                    const newScoreSpan = document.createElement('span');
+                    newScoreSpan.textContent = newScore;
+                    newScoreSpan.classList.add('score', 'text-lg');
+                    newScoreSpan.dataset.roundIndex = roundIndex;
+                    newScoreSpan.dataset.holeIndex = holeIndex;
+    
+                    if (scores[roundIndex] && scores[roundIndex].roundScores) {
+                        scores[roundIndex].roundScores[holeIndex] = newScore;
+                    } else {
+                        console.error('Round or hole not found');
+                    }
+    
+                    input.replaceWith(newScoreSpan);
+                    addEventListenersToScoreSpans();
+                };
+    
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        saveScore();
+                    }
+                });
+    
+                input.addEventListener('blur', saveScore);
+            });
+        });
+    };
 
 const displayNewRound = () => {
-  const roundsContainer = document.querySelector('.rounds');
-  const round = scores[scores.length - 1];
-  const index = scores.length - 1;
+    const roundsContainer = document.querySelector('.rounds');
+    const tabsContainer = roundsContainer.querySelector('.tabs');
+    const tabContentContainer = roundsContainer.querySelector('.tab-content');
 
-  if (!round.roundScores) {
-      round.roundScores = {};
-  }
+    const newRoundIndex = scores.length - 1;
+    const newRound = scores[newRoundIndex];
 
-  roundsContainer.innerHTML += `
-      <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full max-w-3xl m-auto'>
-            <div class='flex justify-between w-full'>
-                <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
-                <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round' data-index='${index}'>
-                    <i class="fa fa-trash"></i>
-                </span>
-            </div>
-            <div class='w-full'>
-                <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
-                <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
-                <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
-            </div>
-            <div class='w-full mb-4'>
-                <div>
-                    <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
+    const newTabButton = document.createElement('button');
+    newTabButton.className = 'tab-button px-4 py-2 rounded-t-lg bg-gray-200';
+    newTabButton.dataset.index = newRoundIndex;
+    newTabButton.textContent = `Round ${newRoundIndex + 1}`;
+    newTabButton.addEventListener('click', () => showRound(newRoundIndex));
+
+    tabsContainer.appendChild(newTabButton);
+
+    const newRoundDetails = document.createElement('div');
+    newRoundDetails.id = `round-details-${newRoundIndex}`;
+    newRoundDetails.className = 'round-details hidden p-4 bg-white rounded-lg shadow-md relative max-w-xl';
+    newRoundDetails.innerHTML = `
+        <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round absolute top-2 right-2' data-index='${newRoundIndex}'>
+            <i class="fa fa-trash"></i>
+        </span>
+        <p class='text-xl mb-2'>Player: <span class='font-bold'>${newRound.playerName}</span></p>
+        <p class='text-xl mb-2'>Date: <span class='font-bold'>${newRound.date}</span></p>
+        <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${newRound.totalScore}</span></p>
+        <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+        <div class='grid grid-cols-5 gap-4'>
+            ${Object.entries(newRound.roundScores).map(([holeIndex, score]) => `
+                <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
+                    <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                    <span class='score text-lg' data-round-index='${newRoundIndex}' data-hole-index='${holeIndex}'>${score}</span>
                 </div>
-                <div id='round-details-${index}' class='round-details hidden mt-4'>
-                    <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                    <div class='grid grid-cols-2 gap-4'>
-                        ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
-                            <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
-                                <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
-                                <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
+            `).join('')}
         </div>
-  `;
+    `;
 
-  addEventListenersToViewScoresButtons();
-  addEventListenersToScoreSpans();
-  deleteRoundEventListener();
+    tabContentContainer.appendChild(newRoundDetails);
+
+    addEventListenersToScoreSpans();
+    deleteRoundEventListener();
 };
 
 const calculateHandicap = () => {
@@ -590,6 +613,10 @@ const calculateHandicap = () => {
   const course = courses[0];
 
   const courseHandicap = (handicapIndex * (course.slopeRating / 113)) + (course.courseRating - course.par);
+  if (courseHandicap < 0) {
+      return `+${Math.abs(courseHandicap).toFixed(1)}`;
+  }
+
   return courseHandicap.toFixed(1);
 };
 
@@ -637,16 +664,27 @@ const deleteModalConfirmation = (index) => {
 const renderUserCard = () => {
     const userCardContainer = document.querySelector('.user-card');
     userCardContainer.innerHTML = `
-        <img src="../assets/golfCourse.jpg" alt="User" class="user-image rounded-full w-32 h-32 mb-4">
-        <h2 class="text-2xl font-bold mb-2">Jace Randolph</h2>
-        <div class="stats w-full mt-4">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-lg font-semibold">Rounds:</span>
-                <span class="text-lg font-bold">${scores.length}</span>
-            </div>
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-lg font-semibold">Handicap:</span>
-                <span class="text-lg font-bold">${calculateHandicap()}</span>
+        <div class='flex flex-col items-center justify-center w-full'>
+            <img src="../assets/profilePlaceholder.jpg" alt="User" class="user-image rounded-full w-48 h-48 mb-4 cursor-pointer">
+            <input type="file" class="hidden image-upload" accept="image/*">
+            <h2 class="text-2xl font-bold mb-2">Jace Randolph</h2>
+            <div class="stats w-96 mt-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Rounds:</span>
+                    <span class="text-lg font-bold">${scores.length}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Handicap:</span>
+                    <span class="text-lg font-bold">${calculateHandicap()}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Best Score:</span>
+                    <span class="text-lg font-bold">${bestScore()}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Favorite Course:</span>
+                    <span class="text-lg font-bold">${favoriteCourse()}</span>
+                </div>
             </div>
         </div>
         <div class="rounds-container mx-auto p-6 w-full">
@@ -655,6 +693,79 @@ const renderUserCard = () => {
         </div>
     `;
     displayRounds();
+    updateUserImage();
+};
+
+const updateUserImage = () => {
+    const userImage = document.querySelector('.user-image');
+    const imageUpload = document.querySelector('.image-upload');
+
+    fetch('http://localhost:4000/user-image')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.imagePath) {
+                userImage.src = `http://localhost:4000${data.imagePath}`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+
+    userImage.addEventListener('click', () => {
+        imageUpload.click();
+    });
+
+    imageUpload.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('http://localhost:4000/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    userImage.src = `http://localhost:4000${data.filePath}`; // Ensure the correct file path
+                } else {
+                    console.error('Failed to upload image');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    });
+};
+
+const bestScore = () => {
+    if (scores.length === 0) {
+        return 0; 
+    }
+
+    const best = scores.reduce((best, round) => {
+        return round.totalScore < best ? round.totalScore : best;
+    }, scores[0].totalScore);
+
+    return best;
+};
+
+const favoriteCourse = () => {
+    if (scores.length === 0) {
+        return 0;
+    }
+
+    const courseIds = scores.map(round => round.courseId);
+    const favoriteCourseId = courseIds.sort((a, b) =>
+        courseIds.filter(id => id === a).length - courseIds.filter(id => id === b).length
+    ).pop();
+    const favoriteCourse = courses.find(course => course.id === favoriteCourseId);
+    console.log(favoriteCourse)
+
+    return favoriteCourse.name;
+
 };
 
     searchCourses();
