@@ -730,7 +730,7 @@ const updateUserImage = () => {
                 if (data.success) {
                     userImage.src = `http://localhost:4000${data.filePath}`; 
                 } else {
-                    console.error('Could not upload image');
+                    console.error('Failed to upload image');
                 }
             })
             .catch(error => {
