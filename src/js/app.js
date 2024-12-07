@@ -4,6 +4,7 @@ let holeIndex = 0;
 let totalScore = 0;
 let selectedScores = {};
 let show = false;
+let roundIdCounter = 1;
 const startRoundBtn = document.querySelector('.start-round');
 const modal = document.querySelector('.modal');
 const originalModalContent = modal.innerHTML;
@@ -23,14 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
         courses = data;
         console.log('Courses', courses);
         renderCourses();
-        displayRounds();
     };
       
     const fetchData = async () => {
       await Promise.all([getScores(), getCourses()]);
       renderCourses();
-      displayRounds();
       displayHandicap();
+      renderUserCard();
   };
 
     fetchData();
@@ -146,10 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class='w-full'>
                     <label class='block text-lg font-medium text-gray-700 mb-2' for='player-name'>Name</label>
                     <input type='text' id='player-name' placeholder='Name' class='player-name w-full border border-gray-300 rounded-md p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-green-500'>
+                    <p id="nameError" class="text-red-500 text-sm hidden">Please enter your name.</p>
                 </div>
                 <div class='w-full'>
                     <label class='block text-lg font-medium text-gray-700 mb-2' for='current-date'>Date</label>
                     <input type='date' id='current-date' class='current-date w-full border border-gray-300 rounded-md p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-green-500'>
+                    <p id="dateError" class="text-red-500 text-sm hidden">Please enter a date.</p>
                 </div>
                 <button class='submit-scores bg-green-700 text-white font-bold py-3 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500'>Submit</button>
             </div>
@@ -170,6 +172,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const submitForm = (courseData) => {
         const playerName = getPlayerName();
         const currentDate = getDate();
+        const nameError = document.getElementById('nameError');
+        const dateError = document.getElementById('dateError');
+
+        let valid = true;
+
+        if (playerName.trim() === '') {
+            nameError.classList.remove('hidden');
+            valid = false;
+        } else {
+            nameError.classList.add('hidden');
+        }
+
+        if (currentDate.trim() === '') {
+            dateError.classList.remove('hidden');
+            valid = false;
+        } else {
+            dateError.classList.add('hidden');
+        }
+
+        if (!valid) {
+            return;
+        }
+        
         courseData.playerName = playerName; 
         courseData.currentDate = currentDate;
         holeIndex = 0; 
@@ -188,25 +213,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const prevHole = (courseData) => {
         if (holeIndex > 0) {
-          holeIndex--;
+            holeIndex--;
         } else {
-          holeIndex = courseData.holes.length - 1;
+            holeIndex = courseData.holes.length - 1;
         }
         updateModalContent(courseData);
-      };
+    };
     
-      const nextHole = (courseData) => {
+    const nextHole = (courseData) => {
         if (selectedScores[holeIndex] === undefined) {
-          totalScore += selectedScores[holeIndex];
+            totalScore += selectedScores[holeIndex];
         }
     
         if (holeIndex < courseData.holes.length - 1) {
-          holeIndex++;
+            holeIndex++;
         } else {
-          holeIndex = 0;
+            holeIndex = 0;
         }
         updateModalContent(courseData);
-      };
+    };
     
       const attachNavigationEventListeners = (courseData) => {
         const prevHoleBtn = document.querySelector('.prev-hole');
@@ -274,21 +299,33 @@ document.addEventListener('DOMContentLoaded', () => {
       const attachScoreEventListeners = () => {
         const scoreButtons = document.querySelectorAll('.btn');
         scoreButtons.forEach(button => {
-          button.addEventListener('click', (event) => {
-            const holeIndex = event.target.getAttribute('data-hole-index');
-            const score = event.target.getAttribute('data-score');
-            selectScore(holeIndex, score, event.target);
-          });
+            button.addEventListener('click', (event) => {
+                const holeIndex = event.target.getAttribute('data-hole-index');
+                const score = event.target.getAttribute('data-score');
+                selectScore(holeIndex, score, event.target);
+            });
         });
-      };
-
-      const selectScore = (holeIndex, score, element) => {
+    
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if (key >= '1' && key <= '8') {
+                const score = key;
+                const activeButton = document.querySelector('.btn[data-score="' + score + '"]');
+                if (activeButton) {
+                    const holeIndex = activeButton.getAttribute('data-hole-index');
+                    selectScore(holeIndex, score, activeButton);
+                }
+            }
+        });
+    };
+    
+    const selectScore = (holeIndex, score, element) => {
         selectedScores[holeIndex] = score;
         document.querySelectorAll('.btn').forEach(btn => {
-          btn.classList.remove('bg-blue-200');
+            btn.classList.remove('bg-blue-200');
         });
         element.classList.add('bg-blue-200');
-      }
+    };
 
       const getTotalScore = () => {
         let total = 0;
@@ -305,6 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalScore = getTotalScore();
     
         const newRound = {
+            id: roundIdCounter++,
             round: scores.length + 1,
             playerName,
             date: currentDate,
@@ -324,7 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             console.log('New round added:', data);
             scores.push(data);
-            displayNewRound();
+            displayNewRound(); 
+            displayHandicap();
         })
         .catch(error => {
             console.error('Error adding new round:', error);
@@ -335,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         innerContent.innerHTML = `
             <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md'>
                 <h1 class='text-3xl font-bold mb-4'>Round Summary</h1>
-                <p class='text-xl mb-2'>Your total score is <span class='font-bold'>${totalScore}</span></p>
+                <p class='text-xl mb-2'>Your total score is <span class='font-bold'>${totalScore}</span><span>${totalScoreEmoji(totalScore)}</span></p>
                 <div class='w-full mb-4'>
                     <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
                     <ul class='list-disc list-inside'>
@@ -349,6 +388,16 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     };
 
+    const totalScoreEmoji = (totalScore) => {
+      if (totalScore < 72) {
+        return '🔥';
+      } else if (totalScore === 72) {
+        return '👌';
+      } else {
+        return '💩';
+      }
+    }
+
       const finishRoundEventListener = (courseData) => {
         const finishRoundBtn = document.querySelector('.finish-round');
         finishRoundBtn.addEventListener('click', () => finishRound(courseData));
@@ -356,148 +405,192 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const displayRounds = () => {
         const roundsContainer = document.querySelector('.rounds');
-        roundsContainer.innerHTML = scores.map((round, index) => `
-            <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full max-w-3xl m-auto'>
-              <h1 class='text-3xl font-bold mb-4'>Round ${index + 1}</h1>
-              <div>
-                <span><i <i class="fa fa-trash"></i></span>
-              </div>
-              <div class='w-full'>
-                  <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
-                  <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
-                  <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
-              </div>
-              <div class='w-full mb-4'>
-                  <div>
-                      <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
-                  </div>
-                  <div id='round-details-${index}' class='round-details hidden mt-4'>
-                      <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                      <div class='grid grid-cols-2 gap-4'>
-                          ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
-                              <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
-                                  <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
-                                  <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
-                              </div>
-                          `).join('')}
-                      </div>
-                  </div>
-              </div>
-            </div>
-          `).join('');
+        const tabs = scores.map((round, index) => `
+            <button class='tab-button px-4 py-2 rounded-t-lg ${index === 0 ? 'bg-green-700 text-white' : 'bg-gray-200'}' data-index='${index}'>Round ${index + 1}</button>
+        `).join('');
     
-        addEventListenersToViewScoresButtons();
-        addEventListenersToScoreSpans();
-    };
-
-    const toggleRounds = (index) => {
-      const roundDetails = document.querySelector(`#round-details-${index}`);
-      if (roundDetails) {
-          roundDetails.classList.toggle('hidden');
-      }
-      console.log('clicked')
-    };
-
-    const addEventListenersToViewScoresButtons = () => {
-      document.querySelectorAll('.view-scores-btn').forEach(button => {
-          button.addEventListener('click', ({ target }) => {
-              const index = target.getAttribute('data-index');
-              toggleRounds(index);
-          });
-      });
-  };
-  
-  const addEventListenersToScoreSpans = () => {
-    document.querySelectorAll('.score-div span.score').forEach(span => {
-        span.addEventListener('click', ({ target }) => {
-            const scoreSpan = target;
-            const score = scoreSpan.textContent;
-            const roundIndex = scoreSpan.dataset.roundIndex;
-            const holeIndex = scoreSpan.dataset.holeIndex;
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = score;
-            input.classList.add('score-input');
-            input.dataset.roundIndex = roundIndex;
-            input.dataset.holeIndex = holeIndex;
-            scoreSpan.replaceWith(input);
-
-            let save = false;
-
-            const saveScore = () => {
-                if (save) return;
-                save = true;
-
-                const newScore = input.value;
-                const newScoreSpan = document.createElement('span');
-                newScoreSpan.textContent = newScore;
-                newScoreSpan.classList.add('score', 'text-lg');
-                newScoreSpan.dataset.roundIndex = roundIndex;
-                newScoreSpan.dataset.holeIndex = holeIndex;
-
-                if (scores[roundIndex] && scores[roundIndex].roundScores) {
-                    scores[roundIndex].roundScores[holeIndex] = newScore;
-                } else {
-                    console.error('Round or hole not found');
-                }
-
-                input.replaceWith(newScoreSpan);
-                addEventListenersToScoreSpans();
-            };
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    saveScore();
-                }
-            });
-
-            input.addEventListener('blur', saveScore);
-        });
-    });
-};
-
-const displayNewRound = () => {
-  const roundsContainer = document.querySelector('.rounds');
-  const round = scores[scores.length - 1];
-  const index = scores.length - 1;
-
-  if (!round.roundScores) {
-      round.roundScores = {};
-  }
-
-  roundsContainer.innerHTML += `
-      <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md mb-4 w-full max-w-3xl m-auto'>
-            <h1 class='text-3xl font-bold mb-4'>Round ${scores.length}</h1>
-            <div>
-                <span><i <i class="fa fa-trash"></i></span>
-            </div>
-            <div class='w-full'>
+        const roundDetails = scores.map((round, index) => `
+            <div id='round-details-${index}' class='round-details ${index === 0 ? '' : 'hidden'} p-4 bg-white rounded-lg shadow-md relative max-w-xl'>
+                <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round absolute top-4 right-4' data-index='${index}'>
+                    <i class="fa fa-trash"></i>
+                </span>
                 <p class='text-xl mb-2'>Player: <span class='font-bold'>${round.playerName}</span></p>
                 <p class='text-xl mb-2'>Date: <span class='font-bold'>${round.date}</span></p>
                 <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${round.totalScore}</span></p>
-            </div>
-            <div class='w-full mb-4'>
-                <div>
-                    <button class='bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-48 text-center hover:bg-green-600 mt-4 view-scores-btn' data-index='${index}'>View Scores</button>
-                </div>
-                <div id='round-details-${index}' class='round-details hidden mt-4'>
-                    <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
-                    <div class='grid grid-cols-2 gap-4'>
-                        ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
-                            <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
-                                <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
-                                <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
-                            </div>
-                        `).join('')}
-                    </div>
+                <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+                <div class='grid grid-cols-3 gap-4'>
+                    ${Object.entries(round.roundScores).map(([holeIndex, score]) => `
+                        <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
+                            <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                            <span class='score text-lg' data-round-index='${index}' data-hole-index='${holeIndex}'>${score}</span>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
-        </div>
-  `;
+        `).join('');
+    
+        roundsContainer.innerHTML = `
+            <div class='tabs-container relative overflow-hidden max-w-xl'>
+                <div class='tabs flex space-x-2 overflow-x-auto scrollbar-hide'>
+                    ${tabs}
+                </div>
+                <div class='fade-left absolute left-0 top-0 bottom-0 w-8  pointer-events-none'></div>
+                <div class='fade-right absolute right-0 top-0 bottom-0 w-8 pointer-events-none'></div>
+            </div>
+            <div class='tab-content'>
+                ${roundDetails}
+            </div>
+        `;
+    
+        addEventListenersToTabButtons();
+        addEventListenersToScoreSpans();
+        deleteRoundEventListener();
+        addEventListenersToViewScoresButton(); 
+    };
+    
+    const addEventListenersToTabButtons = () => {
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', ({ target }) => {
+                const index = parseInt(target.getAttribute('data-index'), 10);
+                showRound(index);
+            });
+        });
+    };
+    
+    const showRound = (index) => {
+        document.querySelectorAll('.round-details').forEach((details, i) => {
+            details.classList.toggle('hidden', i !== index);
+        });
+        document.querySelectorAll('.tab-button').forEach((button, i) => {
+            button.classList.toggle('bg-green-700', i === index);
+            button.classList.toggle('text-white', i === index);
+            button.classList.toggle('bg-gray-200', i !== index);
+        });
+    };
+    
+    const deleteRound = (index) => {
+        scores.splice(index, 1);
+        displayRounds();
+        renderUserCard(); 
+    };
+    
+    const deleteRoundEventListener = () => {
+        document.querySelectorAll('.delete-round').forEach((button, index) => {
+            button.addEventListener('click', () => {
+                deleteModalConfirmation(index);
+            });
+        });
+    };
 
-  addEventListenersToViewScoresButtons();
-  addEventListenersToScoreSpans();
+    const toggleRounds = (index) => {
+        const roundDetails = document.querySelector(`#round-details-${index}`);
+        if (roundDetails) {
+            roundDetails.classList.toggle('hidden');
+        }
+    };
+
+    const addEventListenersToViewScoresButton = () => {
+        document.querySelectorAll('.view-scores-btn').forEach(button => {
+            button.addEventListener('click', ({ target }) => {
+                const index = target.getAttribute('data-index');
+                toggleRounds(index);
+            });
+        });
+    };
+  
+    const addEventListenersToScoreSpans = () => {
+        document.querySelectorAll('.score-div').forEach(div => {
+            div.addEventListener('click', () => {
+                const scoreSpan = div.querySelector('span.score');
+                const score = scoreSpan.textContent;
+                const roundIndex = scoreSpan.dataset.roundIndex;
+                const holeIndex = scoreSpan.dataset.holeIndex;
+    
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = score;
+                input.classList.add('score-input', 'w-8', 'text-center');
+                input.dataset.roundIndex = roundIndex;
+                input.dataset.holeIndex = holeIndex;
+                scoreSpan.replaceWith(input);
+    
+                input.focus();
+    
+                let save = false;
+    
+                const saveScore = () => {
+                    if (save) return;
+                    save = true;
+    
+                    const newScore = input.value;
+                    const newScoreSpan = document.createElement('span');
+                    newScoreSpan.textContent = newScore;
+                    newScoreSpan.classList.add('score', 'text-lg');
+                    newScoreSpan.dataset.roundIndex = roundIndex;
+                    newScoreSpan.dataset.holeIndex = holeIndex;
+    
+                    if (scores[roundIndex] && scores[roundIndex].roundScores) {
+                        scores[roundIndex].roundScores[holeIndex] = newScore;
+                    } else {
+                        console.error('Round or hole not found');
+                    }
+    
+                    input.replaceWith(newScoreSpan);
+                    addEventListenersToScoreSpans();
+                };
+    
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        saveScore();
+                    }
+                });
+    
+                input.addEventListener('blur', saveScore);
+            });
+        });
+    };
+
+const displayNewRound = () => {
+    const roundsContainer = document.querySelector('.rounds');
+    const tabsContainer = roundsContainer.querySelector('.tabs');
+    const tabContentContainer = roundsContainer.querySelector('.tab-content');
+
+    const newRoundIndex = scores.length - 1;
+    const newRound = scores[newRoundIndex];
+
+    const newTabButton = document.createElement('button');
+    newTabButton.className = 'tab-button px-4 py-2 rounded-t-lg bg-gray-200';
+    newTabButton.dataset.index = newRoundIndex;
+    newTabButton.textContent = `Round ${newRoundIndex + 1}`;
+    newTabButton.addEventListener('click', () => showRound(newRoundIndex));
+
+    tabsContainer.appendChild(newTabButton);
+
+    const newRoundDetails = document.createElement('div');
+    newRoundDetails.id = `round-details-${newRoundIndex}`;
+    newRoundDetails.className = 'round-details hidden p-4 bg-white rounded-lg shadow-md relative max-w-xl';
+    newRoundDetails.innerHTML = `
+        <span class='text-red-500 text-xl cursor-pointer hover:text-red-700 delete-round absolute top-2 right-2' data-index='${newRoundIndex}'>
+            <i class="fa fa-trash"></i>
+        </span>
+        <p class='text-xl mb-2'>Player: <span class='font-bold'>${newRound.playerName}</span></p>
+        <p class='text-xl mb-2'>Date: <span class='font-bold'>${newRound.date}</span></p>
+        <p class='text-xl mb-2'>Total Score: <span class='font-bold'>${newRound.totalScore}</span></p>
+        <h2 class='text-2xl font-semibold mb-2'>Hole Scores</h2>
+        <div class='grid grid-cols-5 gap-4'>
+            ${Object.entries(newRound.roundScores).map(([holeIndex, score]) => `
+                <div class='score-div flex justify-between items-center p-2 bg-gray-100 rounded-md cursor-pointer'>
+                    <span class='text-lg font-semibold'>Hole ${parseInt(holeIndex) + 1}</span>
+                    <span class='score text-lg' data-round-index='${newRoundIndex}' data-hole-index='${holeIndex}'>${score}</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    tabContentContainer.appendChild(newRoundDetails);
+
+    addEventListenersToScoreSpans();
+    deleteRoundEventListener();
 };
 
 const calculateHandicap = () => {
@@ -520,6 +613,10 @@ const calculateHandicap = () => {
   const course = courses[0];
 
   const courseHandicap = (handicapIndex * (course.slopeRating / 113)) + (course.courseRating - course.par);
+  if (courseHandicap < 0) {
+      return `+${Math.abs(courseHandicap).toFixed(1)}`;
+  }
+
   return courseHandicap.toFixed(1);
 };
 
@@ -534,6 +631,143 @@ const displayHandicap = () => {
         </div>
     `;
 }
+
+const deleteModalConfirmation = (index) => {
+    const modal = document.createElement('div');
+    modal.classList.add('fixed', 'z-50', 'inset-0', 'flex', 'items-center', 'justify-center', 'bg-black', 'bg-opacity-50');
+    modal.innerHTML = `
+        <div class='flex flex-col items-center p-6 bg-white rounded-lg shadow-md'>
+            <h1 class='text-3xl font-bold mb-4'>Delete Confirmation</h1>
+            <p class='text-xl mb-4'>Are you sure you want to delete round ${index + 1}?</p>
+            <div class='flex space-x-4'>
+                <button class='confirm-delete bg-red-700 text-white font-bold py-3 px-6 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500'>Yes</button>
+                <button class='cancel-delete bg-green-700 text-white font-bold py-3 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500'>No</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const confirmButton = modal.querySelector('.confirm-delete');
+    const cancelButton = modal.querySelector('.cancel-delete');
+
+    confirmButton.addEventListener('click', () => {
+        deleteRound(index);
+        document.body.removeChild(modal);
+    });
+
+    cancelButton.addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+};
+
+const renderUserCard = () => {
+    const userCardContainer = document.querySelector('.user-card');
+    userCardContainer.innerHTML = `
+        <div class='flex flex-col items-center justify-center w-full'>
+            <img src="../assets/profilePlaceholder.jpg" alt="User" class="user-image rounded-full w-48 h-48 mb-4 cursor-pointer">
+            <input type="file" class="hidden image-upload" accept="image/*">
+            <h2 class="text-2xl font-bold mb-2">Jace Randolph</h2>
+            <div class="stats w-96 mt-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Rounds:</span>
+                    <span class="text-lg font-bold">${scores.length}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Handicap:</span>
+                    <span class="text-lg font-bold">${calculateHandicap()}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Best Score:</span>
+                    <span class="text-lg font-bold">${bestScore()}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-semibold">Favorite Course:</span>
+                    <span class="text-lg font-bold">${favoriteCourse()}</span>
+                </div>
+            </div>
+        </div>
+        <div class="rounds-container mx-auto p-6 w-full">
+            <h1 class='text-3xl font-bold mb-6'>Rounds</h1>
+            <div class="rounds flex flex-col w-full gap-4"></div>
+        </div>
+    `;
+    displayRounds();
+    updateUserImage();
+};
+
+const updateUserImage = () => {
+    const userImage = document.querySelector('.user-image');
+    const imageUpload = document.querySelector('.image-upload');
+
+    fetch('http://localhost:4000/user-image')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.imagePath) {
+                userImage.src = `http://localhost:4000${data.imagePath}`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+
+    userImage.addEventListener('click', () => {
+        imageUpload.click();
+    });
+
+    imageUpload.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('http://localhost:4000/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    userImage.src = `http://localhost:4000${data.filePath}`; 
+                } else {
+                    console.error('Could not upload image');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    });
+};
+
+const bestScore = () => {
+    if (scores.length === 0) {
+        return 0; 
+    }
+
+    const best = scores.reduce((best, round) => {
+        return round.totalScore < best ? round.totalScore : best;
+    }, scores[0].totalScore);
+
+    return best;
+};
+
+const favoriteCourse = () => {
+    if (scores.length === 0) {
+        return 0;
+    }
+
+    const courseIds = scores.map(round => round.courseId);
+    const favoriteCourseId = courseIds.sort((a, b) =>
+        courseIds.filter(id => id === a).length - courseIds.filter(id => id === b).length
+    ).pop();
+    const favoriteCourse = courses.find(course => course.id === favoriteCourseId);
+    console.log(favoriteCourse)
+
+    return favoriteCourse.name;
+
+};
+
     searchCourses();
 });
 
