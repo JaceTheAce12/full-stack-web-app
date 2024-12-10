@@ -4,13 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Golf Score Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css"/>
   <link rel="stylesheet" href="./output.css"/>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+  </style>
 </head>
 <body class="bg-gray-200 min-h-screen">
   <header class="bg-green-700 p-4">
     <div class="search-container max-w-xl m-auto relative">
-        <input type="text" class="mt-1 block w-96 p-2 pr-10 border border-gray-300 rounded-md search m-auto" placeholder="Search Courses...">
+        <input type="text" class="mt-1 block w-full p-2 pr-10 border border-gray-300 rounded-md search" placeholder="Search Courses...">
     </div>
   </header>
   <main>
@@ -18,23 +26,27 @@
       <div class="modal-content bg-white p-6 rounded-lg shadow-lg w-full max-w-lg mx-4">
           <span class="close-btn text-gray-500 hover:text-black hover:cursor-pointer float-right text-2xl font-bold">&times;</span>
           <div class="inner w-full flex flex-col gap-4 justify-center m-auto">
-              <h1 class="course-title font-bold text-2xl text-center"></h1>
-              <p class="course-location text-center text-gray-600 font-semibold"></p>
-              <img class="course-image w-full rounded-md m-auto" src="" alt="Course Image">
-              <button class="start-round bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-full text-center hover:bg-green-600">Start Round</button>
+              <h1 class="course-title font-bold text-2xl text-center text-gray-800 mb-2"></h1>
+              <p class="course-location text-center text-gray-600 font-medium mb-1"></p>
+              <p class="course-length text-center text-gray-600 font-medium mb-1"></p>
+              <p class="course-rating text-center text-gray-600 font-medium mb-1"></p>
+              <p class="slope-rating text-center text-gray-600 font-medium mb-1"></p>
+              <p class="course-par text-center text-gray-600 font-medium mb-1"></p>
+              <img class="course-image w-full rounded-md m-auto mb-4" src="" alt="Course Image">
+              <button class="start-round bg-green-700 border-none px-4 py-2 rounded-md text-white font-bold w-full text-center hover:bg-green-600 transition duration-300 ease-in-out">Start Round</button>
           </div>
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto">
-      <h1 class='text-4xl font-bold my-12 ml-4'>Courses</h1>
-      <div class="course-container text-center flex flex-wrap justify-center gap-4 mb-6 w-full m-auto"></div>
+    <div class="max-w-7xl mx-auto px-4">
+      <h1 class='text-4xl font-bold mb-6 mt-12'>Courses</h1>
+      <div class="course-container text-center flex flex-wrap justify-center gap-4 mb-6 w-full"></div>
     </div>
     
-    <div class="user-card flex items-center justify-center bg-gray-100 rounded-lg shadow-md p-6 max-w-6xl mx-auto">
+    <div class="user-card flex flex-col md:flex-col items-center justify-center bg-gray-100 rounded-lg shadow-md p-6 max-w-2xl mx-auto mb-12">
 
-      <div class="rounds-container ">
-        <h1 class='text-3xl font-bold mb-6'>Rounds</h1>
+      <div class="rounds-container max-w-xl">
+        <h1 class='text-3xl font-bold mb-6 max-w-3xl'>Rounds</h1>
         <div class="rounds flex flex-col w-full gap-4"></div>
       </div>
 
